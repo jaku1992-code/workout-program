@@ -27,3 +27,16 @@ A starter file is included: `sample-program.csv`. Open it in Excel, edit it
 to match your own program, save as CSV, and upload it in Settings.
 
 Settings also has a "Download sample CSV" button if you want a fresh copy.
+
+## Backing up your progress
+
+Your maxes, logged sets, and program are saved automatically in this browser
+— but only in this browser, on this device. If you lose your phone or clear
+its browser data, that's gone unless you've backed up.
+
+- Gear icon → Backup → **Download backup file**. Save it somewhere off the
+  phone (email it to yourself, a cloud drive folder).
+- The app will remind you with a banner if it's been 14+ days since your
+  last backup.
+- To restore on a new phone or after wiping data: gear icon → Backup →
+  **Restore from file**, and pick the backup file you saved.

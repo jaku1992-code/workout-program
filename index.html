@@ -271,13 +271,16 @@ const SAMPLE_CSV =
 /* ============================================================
    STATE
    ============================================================ */
+const BACKUP_REMIND_DAYS = 14;
+
 const fresh = () => ({
   v:1, units:"lb",
   programName:"", program:[],       /* [{week,day,lift,order,pct|null,reps}] */
   cycle:1, week:1, day:1,
   max:{},                           /* lift name -> number */
   actual:{},                        /* setKey -> {w,r} typed values */
-  log:{}                            /* setKey -> {lift,week,day,order,w,r,p,u,date,cycle} */
+  log:{},                           /* setKey -> {lift,week,day,order,w,r,p,u,date,cycle} */
+  lastBackup:null                   /* ms timestamp of last export/download, or null */
 });
 let S = fresh();
 
@@ -310,6 +313,29 @@ function pressed(seg, attr, val){
   if (!seg) return;
   $$("button", seg).forEach(b =>
     b.setAttribute("aria-pressed", b.dataset[attr] === String(val)));
+}
+
+/* ============================================================
+   BACKUP STATUS
+   ============================================================ */
+function hasAnyData(){
+  return S.program.length > 0 || Object.keys(S.log).length > 0
+    || Object.keys(S.max).some(function(k){ return S.max[k]; });
+}
+function daysSinceBackup(){
+  if (!S.lastBackup) return null;
+  return Math.floor((Date.now() - S.lastBackup) / 86400000);
+}
+function backupDue(){
+  if (!hasAnyData()) return false;
+  const d = daysSinceBackup();
+  return d === null || d >= BACKUP_REMIND_DAYS;
+}
+function backupStatusText(){
+  const d = daysSinceBackup();
+  if (d === null) return "Never backed up";
+  if (d === 0) return "Backed up today";
+  return "Backed up " + d + " day" + (d === 1 ? "" : "s") + " ago";
 }
 
 /* ============================================================
@@ -459,6 +485,7 @@ async function load(){
       if (!S.max) S.max = {};
       if (!S.actual) S.actual = {};
       if (!S.log) S.log = {};
+      if (S.lastBackup === undefined) S.lastBackup = null;
       ensureValidWeekDay();
     }
   } catch(e){}
@@ -544,10 +571,24 @@ function liftCard(group){
 /* ============================================================
    RENDER — main
    ============================================================ */
+function backupBanner(){
+  if (!backupDue()) return "";
+  const never = daysSinceBackup() === null;
+  return '<div class="banner"><b>Back up your data</b>'
+    + (never
+        ? "You haven't downloaded a backup yet. "
+        : backupStatusText() + " — that's a while. ")
+    + 'If this phone is lost or its storage gets cleared, your maxes and logged '
+    + 'history go with it. '
+    + '<button class="btn ghost" id="fBackupNow" style="min-height:30px;padding:0 10px;margin-top:6px">'
+    + 'Back up now</button></div>';
+}
+
 function render(){
   renderHeader();
+  const banner = backupBanner();
   if (!S.program.length){
-    $("#main").innerHTML = '<div class="notice">'
+    $("#main").innerHTML = banner + '<div class="notice">'
       + '<b>No program loaded</b>'
       + '<p>Upload a CSV that lists your workout by week, day, lift, percent of 1RM and reps.</p>'
       + '<div class="btnrow"><button class="btn wide" id="fUploadEmpty">Upload CSV</button></div>'
@@ -556,12 +597,12 @@ function render(){
   }
   const rows = rowsFor(S.week, S.day);
   if (!rows.length){
-    $("#main").innerHTML = '<div class="notice"><b>Nothing on this day</b>'
+    $("#main").innerHTML = banner + '<div class="notice"><b>Nothing on this day</b>'
       + '<p>No rows in the CSV match week '+S.week+', day '+S.day+'.</p></div>';
     return;
   }
   const groups = groupByLift(rows);
-  $("#main").innerHTML = groups.map(liftCard).join("")
+  $("#main").innerHTML = banner + groups.map(liftCard).join("")
     + '<p class="hint" style="text-align:center">Percentages off your 1RM &middot; '
     + 'rounded to '+INC[S.units]+' '+S.units+' &middot; cycle '+S.cycle+'</p>';
 }
@@ -613,9 +654,14 @@ function settingsDrawer(){
     + '<div class="btnrow"><button class="btn ghost wide" id="fNewCycle">Start next cycle</button></div></div>'
 
     + '<div class="field"><span class="eyebrow">Backup</span>'
-    + '<div class="btnrow"><button class="btn ghost" id="fExport">Export</button>'
-    + '<button class="btn ghost" id="fImport">Import</button></div>'
-    + '<p class="hint">Export saves your program, maxes and logged history as text.</p></div>'
+    + '<p class="hint" style="margin:0 0 8px">'+esc(backupStatusText())+'</p>'
+    + '<div class="btnrow"><button class="btn" id="fBackupDownload">Download backup file</button>'
+    + '<button class="btn ghost" id="fImportFile">Restore from file</button></div>'
+    + '<div class="btnrow"><button class="btn ghost" id="fExport">Copy as text instead</button>'
+    + '<button class="btn ghost" id="fImport">Paste to restore</button></div>'
+    + '<input type="file" accept=".json,application/json" id="fBackupFile" class="hide">'
+    + '<p class="hint">Save the downloaded file somewhere off this phone — a cloud drive, '
+    + 'email to yourself — so a lost or wiped phone doesn’t lose your maxes and history.</p></div>'
 
     + '<div class="field"><button class="btn ghost wide danger" id="fWipe">'
     + 'Erase everything</button></div>');
@@ -680,6 +726,29 @@ function downloadSample(){
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
 }
+function downloadBackup(){
+  S.lastBackup = Date.now();
+  const d = new Date();
+  const stamp = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0")
+    + "-" + String(d.getDate()).padStart(2,"0");
+  const blob = new Blob([JSON.stringify(S, null, 2)], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "workout-backup-" + stamp + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  save(); render();
+  toast("Backup downloaded");
+}
+function restoreFromData(d){
+  if (!d || !Array.isArray(d.program)) throw new Error("shape");
+  S = d;
+  if (!S.max) S.max = {}; if (!S.actual) S.actual = {}; if (!S.log) S.log = {};
+  if (S.lastBackup === undefined) S.lastBackup = null;
+  ensureValidWeekDay();
+  save(); closeDrawer(); render();
+  toast("Backup restored");
+}
 
 /* ============================================================
    EVENTS — clicks
@@ -707,6 +776,9 @@ document.addEventListener("click", function(ev){
     return;
   }
   if (t.id === "fCsvSample"){ downloadSample(); return; }
+  if (t.id === "fBackupDownload"){ downloadBackup(); settingsDrawer(); return; }
+  if (t.id === "fBackupNow"){ downloadBackup(); return; }
+  if (t.id === "fImportFile"){ $("#fBackupFile").click(); return; }
   if (t.id === "fCsvLoad"){
     const txt = $("#fCsvPaste").value;
     if (!txt.trim()){ toast("Paste some CSV text first"); return; }
@@ -731,25 +803,23 @@ document.addEventListener("click", function(ev){
   if (t.id === "xCopy"){
     const ta = $("#xText");
     ta.select(); ta.setSelectionRange(0, 999999);
+    const markBackedUp = function(){
+      S.lastBackup = Date.now(); save();
+    };
     if (navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(ta.value).then(
-        function(){ toast("Copied"); }, function(){ toast("Select and copy manually"); });
+        function(){ markBackedUp(); toast("Copied"); },
+        function(){ toast("Select and copy manually"); });
     } else {
       let ok = false; try { ok = document.execCommand("copy"); } catch(e){}
+      if (ok) markBackedUp();
       toast(ok ? "Copied" : "Select and copy manually");
     }
     return;
   }
   if (t.id === "iGo"){
-    try {
-      const d = JSON.parse($("#iText").value.trim());
-      if (!d || !Array.isArray(d.program)) throw new Error("shape");
-      S = d;
-      if (!S.max) S.max = {}; if (!S.actual) S.actual = {}; if (!S.log) S.log = {};
-      ensureValidWeekDay();
-      save(); closeDrawer(); render();
-      toast("Backup restored");
-    } catch(e){ toast("That is not a valid backup"); }
+    try { restoreFromData(JSON.parse($("#iText").value.trim())); }
+    catch(e){ toast("That is not a valid backup"); }
     return;
   }
   if (t.id === "fWipe"){
@@ -772,6 +842,18 @@ document.addEventListener("input", function(ev){
     const file = el.files[0];
     const reader = new FileReader();
     reader.onload = function(){ applyCSV(String(reader.result), file.name); };
+    reader.onerror = function(){ toast("Could not read that file"); };
+    reader.readAsText(file);
+    return;
+  }
+
+  if (el.id === "fBackupFile" && el.files && el.files[0]){
+    const file = el.files[0];
+    const reader = new FileReader();
+    reader.onload = function(){
+      try { restoreFromData(JSON.parse(String(reader.result))); }
+      catch(e){ toast("That is not a valid backup file"); }
+    };
     reader.onerror = function(){ toast("Could not read that file"); };
     reader.readAsText(file);
     return;
