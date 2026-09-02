@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Program">
+<meta name="theme-color" content="#16181c">
+<title>Program Tracker</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2316181c'/%3E%3Crect x='8' y='29' width='48' height='6' fill='%238b9099'/%3E%3Crect x='12' y='19' width='7' height='26' fill='%23c8443c'/%3E%3Crect x='45' y='19' width='7' height='26' fill='%23c8443c'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --steel-900:#16181c; --steel-850:#1a1d22; --steel-800:#1e2127;
+  --steel-750:#242830; --steel-700:#2e333d;
+  --chalk:#e8e6e1; --zinc:#8b9099; --zinc-dim:#5f656e;
+  --iron:#c8443c; --brass:#c9a227; --moss:#4f8a5e;
+  --gauge:'Saira Condensed','Arial Narrow','Helvetica Neue',sans-serif;
+  --body:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --pad:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--steel-900);color:var(--chalk);font-family:var(--body);
+  font-size:15px;line-height:1.4;
+  padding-bottom:calc(48px + env(safe-area-inset-bottom));
+  -webkit-text-size-adjust:100%}
+button,input,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+.hide{display:none !important}
+.eyebrow{font-family:var(--mono);font-size:10px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--zinc-dim)}
+
+/* header */
+.hdr{position:sticky;top:0;z-index:30;background:var(--steel-900);
+  border-bottom:1px solid var(--steel-700);
+  padding:calc(env(safe-area-inset-top) + 10px) var(--pad) 0}
+.hdr-top{display:flex;align-items:center;gap:8px;padding-bottom:10px}
+.mark{font-family:var(--gauge);font-weight:900;font-size:20px;letter-spacing:.04em;
+  text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  max-width:44vw}
+.mark span{color:var(--iron)}
+.hdr-spacer{flex:1 1 auto}
+.icon-btn{width:38px;height:38px;border-radius:6px;display:flex;flex:0 0 auto;
+  align-items:center;justify-content:center;background:var(--steel-800);
+  border:1px solid var(--steel-700);font-size:16px;color:var(--zinc)}
+.icon-btn:active{background:var(--steel-750)}
+.icon-btn.flag{border-color:var(--brass);color:var(--brass)}
+
+.hdr-rows{display:flex;flex-direction:column;gap:8px;padding-bottom:12px}
+.row-lbl{display:flex;align-items:center;gap:10px}
+.row-lbl .eyebrow{flex:0 0 42px}
+.row-lbl .seg{flex:1 1 auto}
+.seg{display:flex;background:var(--steel-800);border:1px solid var(--steel-700);
+  border-radius:6px;overflow-x:auto}
+.seg button{flex:1 1 0;min-width:44px;min-height:38px;padding:0 8px;font-family:var(--mono);
+  font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--zinc);border-right:1px solid var(--steel-700)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--iron);color:#fff}
+.ticks{height:7px;background-image:repeating-linear-gradient(to right,
+  var(--steel-700) 0 1px,transparent 1px 9px);background-position:bottom left;
+  border-bottom:1px solid var(--steel-700)}
+
+/* banner */
+.banner{margin:0 0 4px;padding:10px 12px;border-radius:6px;
+  background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.4);
+  font-size:12px;color:var(--brass)}
+.banner b{display:block;font-family:var(--mono);font-size:10px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px}
+
+/* cards */
+main{padding:var(--pad);display:flex;flex-direction:column;gap:14px}
+.card{background:var(--steel-850);border:1px solid var(--steel-700);
+  border-radius:8px;overflow:hidden}
+.card-hd{display:flex;align-items:baseline;gap:8px;padding:12px 14px 10px;
+  border-bottom:1px solid var(--steel-700)}
+.lift-name{font-family:var(--gauge);font-weight:700;font-size:24px;
+  letter-spacing:.05em;text-transform:uppercase;line-height:1}
+.card-hd .rm{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--zinc);
+  text-align:right}
+.card-hd .rm b{color:var(--chalk);font-weight:600}
+.tag{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;padding:3px 6px;border-radius:3px;
+  background:var(--steel-750);color:var(--zinc)}
+.tag.warn{background:rgba(201,162,39,.16);color:var(--brass)}
+
+/* set rows */
+.acthd{display:flex;justify-content:flex-end;padding:9px 14px 2px}
+.setwrap{border-bottom:1px solid var(--steel-750)}
+.setwrap:last-child{border-bottom:0}
+.setwrap.amrap{background:var(--steel-800);border-left:3px solid var(--brass)}
+.set{display:flex;align-items:center;gap:10px;padding:9px 14px;flex-wrap:wrap}
+.set-l{flex:1 1 auto;min-width:0}
+.line1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.pct{font-family:var(--mono);font-size:11px;color:var(--zinc-dim)}
+.wt{font-family:var(--gauge);font-weight:700;font-size:28px;line-height:1}
+.wt em{font-style:normal;font-size:12px;color:var(--zinc);margin-left:3px;
+  font-family:var(--mono)}
+.alt{display:block;font-family:var(--mono);font-size:11px;
+  color:var(--zinc-dim);margin-top:3px}
+.reps{font-family:var(--gauge);font-weight:700;font-size:18px;color:var(--zinc);
+  letter-spacing:.04em}
+.setwrap.amrap .reps{color:var(--brass)}
+.set-inputs{flex:1 1 100%;display:flex;gap:8px}
+.fl{display:flex;flex-direction:column;gap:3px;flex:1 1 0;min-width:0}
+input.act{width:100%;height:40px;padding:0 6px;text-align:center;
+  background:var(--steel-900);border:1px solid var(--steel-700);border-radius:6px;
+  font-family:var(--gauge);font-weight:700;font-size:18px}
+input.act::placeholder{font-family:var(--mono);font-size:10px;font-weight:400;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--zinc-dim)}
+input.act:focus{outline:2px solid var(--iron);outline-offset:-1px}
+input.act.filled{border-color:var(--brass)}
+.stat{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--zinc-dim);padding:0 14px 9px;text-align:right}
+.stat.saved{color:var(--moss)}
+
+.btn{min-height:40px;padding:0 14px;border-radius:6px;background:var(--iron);
+  color:#fff;font-family:var(--mono);font-size:11px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase}
+.btn:active{filter:brightness(.88)}
+.btn.ghost{background:var(--steel-750);color:var(--chalk);
+  border:1px solid var(--steel-700)}
+.btn.wide{width:100%}
+.btn:disabled{opacity:.4}
+
+.notice{border:1px dashed var(--steel-700);border-radius:8px;padding:24px 16px;
+  text-align:center;color:var(--zinc)}
+.notice b{display:block;color:var(--chalk);font-family:var(--gauge);font-size:22px;
+  letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px}
+.notice p{margin:6px 0}
+.hint{font-size:12px;color:var(--zinc);margin:7px 0 0}
+
+/* drawer */
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(6,7,9,.68)}
+.drawer{position:fixed;left:0;right:0;bottom:0;z-index:41;max-height:92vh;
+  overflow-y:auto;background:var(--steel-900);border-top:1px solid var(--steel-700);
+  border-radius:14px 14px 0 0;
+  padding:0 var(--pad) calc(28px + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling:touch}
+.drawer-hd{position:sticky;top:0;background:var(--steel-900);display:flex;
+  align-items:center;gap:10px;padding:16px 0 12px;
+  border-bottom:1px solid var(--steel-700);margin-bottom:4px}
+.drawer-hd h2{margin:0;font-family:var(--gauge);font-weight:700;font-size:22px;
+  letter-spacing:.06em;text-transform:uppercase}
+.drawer-hd .icon-btn{margin-left:auto}
+.field{padding:12px 0;border-bottom:1px solid var(--steel-750)}
+.field:last-child{border-bottom:0}
+.field .eyebrow{display:block;margin-bottom:7px}
+.maxrow{display:flex;align-items:center;gap:12px;padding:9px 0;
+  border-bottom:1px solid var(--steel-750)}
+.maxrow .nm{font-family:var(--gauge);font-weight:700;font-size:18px;
+  letter-spacing:.05em;text-transform:uppercase;flex:1 1 auto}
+.maxrow input{flex:0 0 104px;min-height:44px;padding:0 10px;
+  background:var(--steel-800);border:1px solid var(--steel-700);border-radius:6px;
+  font-family:var(--gauge);font-weight:700;font-size:21px;text-align:center}
+.maxrow input:focus{outline:2px solid var(--iron);outline-offset:-1px}
+.maxrow .cv{flex:0 0 66px;text-align:right;font-family:var(--mono);
+  font-size:11px;color:var(--zinc-dim)}
+
+.hgroup{padding:12px 0;border-bottom:1px solid var(--steel-750)}
+.hgroup h3{margin:0 0 8px;font-family:var(--gauge);font-weight:700;font-size:18px;
+  letter-spacing:.05em;text-transform:uppercase}
+.hrow{display:flex;align-items:baseline;gap:8px;font-family:var(--mono);
+  font-size:12px;color:var(--zinc);padding:5px 0;flex-wrap:wrap}
+.hrow .hd{flex:0 0 auto;color:var(--zinc-dim)}
+.hrow .hw{font-family:var(--gauge);font-weight:700;font-size:17px;color:var(--chalk)}
+.hrow .hr{color:var(--brass);font-weight:600}
+.hrow .hp{margin-left:auto;color:var(--zinc-dim)}
+
+textarea{width:100%;min-height:110px;padding:10px;background:var(--steel-800);
+  border:1px solid var(--steel-700);border-radius:6px;font-family:var(--mono);
+  font-size:11px;color:var(--chalk);resize:vertical}
+.btnrow{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.btnrow .btn{flex:1 1 0;text-align:center;min-width:120px}
+.danger{color:var(--iron)}
+.filepick{display:block;width:100%;padding:10px;background:var(--steel-800);
+  border:1px dashed var(--steel-700);border-radius:6px;font-family:var(--mono);
+  font-size:11px;color:var(--zinc)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);z-index:60;background:var(--chalk);color:var(--steel-900);
+  font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;padding:11px 16px;border-radius:6px;max-width:88vw;
+  text-align:center;
+  box-shadow:0 6px 24px rgba(0,0,0,.5)}
+@media (prefers-reduced-motion:no-preference){
+  .drawer{animation:up .22s ease-out}
+  @keyframes up{from{transform:translateY(14px);opacity:.6}}
+}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-top">
+    <div class="mark" id="progTitle">Program</div>
+    <div class="hdr-spacer"></div>
+    <button class="icon-btn" id="btnHist" aria-label="History">&#9711;</button>
+    <button class="icon-btn" id="btnSet" aria-label="Settings">&#9881;</button>
+  </div>
+  <div class="hdr-rows" id="navRows"></div>
+  <div class="ticks"></div>
+</header>
+
+<main id="main"></main>
+<div id="layer"></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   STORAGE
+   ============================================================ */
+const KEY = "workout-program-v1";
+const Store = {
+  async get(){
+    if (window.storage){
+      try { const r = await window.storage.get(KEY); return r ? r.value : null; }
+      catch(e){ return null; }
+    }
+    try { return localStorage.getItem(KEY); } catch(e){ return null; }
+  },
+  async set(v){
+    if (window.storage){
+      try { await window.storage.set(KEY, v); return true; } catch(e){ return false; }
+    }
+    try { localStorage.setItem(KEY, v); return true; } catch(e){ return false; }
+  }
+};
+
+/* ============================================================
+   CONSTANTS
+   ============================================================ */
+const INC = { lb:5, kg:2.5 };
+const LB_PER_KG = 2.20462;
+
+const SAMPLE_CSV =
+"week,day,lift,order,pct,reps\n" +
+"1,1,Squat,1,65,5\n" +
+"1,1,Squat,2,75,5\n" +
+"1,1,Squat,3,85,5+\n" +
+"1,1,Bench Press,1,65,5\n" +
+"1,1,Bench Press,2,75,5\n" +
+"1,1,Bench Press,3,85,5+\n" +
+"1,1,Ab Wheel,1,,10-15\n" +
+"1,2,Deadlift,1,65,5\n" +
+"1,2,Deadlift,2,75,5\n" +
+"1,2,Deadlift,3,85,5+\n" +
+"1,2,Overhead Press,1,65,5\n" +
+"1,2,Overhead Press,2,75,5\n" +
+"1,2,Overhead Press,3,85,5+\n" +
+"2,1,Squat,1,70,3\n" +
+"2,1,Squat,2,80,3\n" +
+"2,1,Squat,3,90,3+\n" +
+"2,1,Bench Press,1,70,3\n" +
+"2,1,Bench Press,2,80,3\n" +
+"2,1,Bench Press,3,90,3+\n" +
+"2,2,Deadlift,1,70,3\n" +
+"2,2,Deadlift,2,80,3\n" +
+"2,2,Deadlift,3,90,3+\n" +
+"2,2,Overhead Press,1,70,3\n" +
+"2,2,Overhead Press,2,80,3\n" +
+"2,2,Overhead Press,3,90,3+\n";
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const fresh = () => ({
+  v:1, units:"lb",
+  programName:"", program:[],       /* [{week,day,lift,order,pct|null,reps}] */
+  cycle:1, week:1, day:1,
+  max:{},                           /* lift name -> number */
+  actual:{},                        /* setKey -> {w,r} typed values */
+  log:{}                            /* setKey -> {lift,week,day,order,w,r,p,u,date,cycle} */
+});
+let S = fresh();
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const $  = (s,r=document) => r.querySelector(s);
+const $$ = (s,r=document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c =>
+  ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+function roundW(w,u){ const i = INC[u]; return Math.round(w/i)*i; }
+function fmt(w){ return (Math.round(w*100)/100).toString(); }
+function other(u){ return u === "lb" ? "kg" : "lb"; }
+function conv(w, from){
+  if (!w) return 0;
+  return Math.round((from === "lb" ? w/LB_PER_KG : w*LB_PER_KG) * 10) / 10;
+}
+function setWeight(max, pct){ return roundW(max * pct / 100, S.units); }
+function num(v){ const n = parseFloat(v); return isNaN(n) ? null : n; }
+function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,"_"); }
+
+function toast(m){
+  const o = $(".toast"); if (o) o.remove();
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = m;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
+function pressed(seg, attr, val){
+  if (!seg) return;
+  $$("button", seg).forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset[attr] === String(val)));
+}
+
+/* ============================================================
+   CSV PARSING
+   ============================================================ */
+function parseCSVText(text){
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i=0;i<text.length;i++){
+    const c = text[i];
+    if (inQuotes){
+      if (c === '"'){
+        if (text[i+1] === '"'){ field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ','){ row.push(field); field = ""; }
+      else if (c === '\n'){ row.push(field); rows.push(row); row = []; field = ""; }
+      else if (c === '\r'){ /* skip, \n handles the break */ }
+      else field += c;
+    }
+  }
+  if (field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(c => c.trim() !== ""));
+}
+
+const COL_ALIASES = {
+  week:["week","wk"], day:["day"],
+  lift:["lift","exercise","movement","name"],
+  order:["order","set","setnumber","seq","sequence"],
+  pct:["pct","percent","percentage","%"],
+  reps:["reps","rep","target"]
+};
+
+function loadProgramCSV(text){
+  const rows = parseCSVText(text);
+  if (!rows.length) return { error:"That file has no rows in it." };
+  const header = rows[0].map(h => h.trim().toLowerCase());
+  const idx = {};
+  Object.keys(COL_ALIASES).forEach(function(key){
+    const i = header.findIndex(function(h){ return COL_ALIASES[key].indexOf(h) >= 0; });
+    if (i >= 0) idx[key] = i;
+  });
+  const missing = ["week","day","lift","reps"].filter(function(k){ return idx[k] === undefined; });
+  if (missing.length){
+    return { error:"Missing column" + (missing.length>1?"s":"") + ": " + missing.join(", ") +
+      ". The first row needs headers: week, day, lift, order, pct, reps." };
+  }
+  const out = [];
+  let skipped = 0;
+  for (let r=1;r<rows.length;r++){
+    const row = rows[r];
+    const week = parseInt(row[idx.week],10);
+    const day = parseInt(row[idx.day],10);
+    const lift = (row[idx.lift] || "").trim();
+    const reps = (row[idx.reps] || "").trim();
+    if (!week || !day || !lift || !reps){ skipped++; continue; }
+    const pctRaw = idx.pct !== undefined ? (row[idx.pct] || "").trim() : "";
+    let pct = pctRaw === "" ? null : parseFloat(pctRaw);
+    if (pct !== null && isNaN(pct)) pct = null;
+    const orderRaw = idx.order !== undefined ? (row[idx.order] || "").trim() : "";
+    let order = orderRaw === "" ? null : parseFloat(orderRaw);
+    if (order === null || isNaN(order)) order = out.length;
+    out.push({ week:week, day:day, lift:lift, order:order, pct:pct, reps:reps });
+  }
+  if (!out.length) return { error:"No usable rows found. Every row needs week, day, lift and reps filled in." };
+  return { rows:out, skipped:skipped };
+}
+
+/* ============================================================
+   PROGRAM QUERIES
+   ============================================================ */
+function weeksInProgram(){
+  const s = {}; S.program.forEach(function(r){ s[r.week] = true; });
+  return Object.keys(s).map(Number).sort(function(a,b){ return a-b; });
+}
+function daysInWeek(week){
+  const s = {};
+  S.program.forEach(function(r){ if (r.week === week) s[r.day] = true; });
+  return Object.keys(s).map(Number).sort(function(a,b){ return a-b; });
+}
+function liftsInProgram(){
+  const seen = {}, out = [];
+  S.program.forEach(function(r){ if (!seen[r.lift]){ seen[r.lift]=1; out.push(r.lift); } });
+  return out;
+}
+function rowsFor(week, day){
+  return S.program.filter(function(r){ return r.week===week && r.day===day; })
+    .slice().sort(function(a,b){ return a.order - b.order; });
+}
+function groupByLift(rows){
+  const order = [], map = {};
+  rows.forEach(function(r){
+    if (!map[r.lift]){ map[r.lift] = []; order.push(r.lift); }
+    map[r.lift].push(r);
+  });
+  return order.map(function(l){ return { lift:l, rows:map[l] }; });
+}
+function ensureValidWeekDay(){
+  const wks = weeksInProgram();
+  if (!wks.length) return;
+  if (wks.indexOf(S.week) < 0) S.week = wks[0];
+  const dys = daysInWeek(S.week);
+  if (dys.length && dys.indexOf(S.day) < 0) S.day = dys[0];
+}
+
+/* ============================================================
+   KEYS / LOGGING
+   ============================================================ */
+function setKey(row){
+  return "c"+S.cycle+"_w"+row.week+"_d"+row.day+"_"+slug(row.lift)+"_o"+row.order;
+}
+function syncEntry(row){
+  const k = setKey(row);
+  const a = S.actual[k] || {};
+  const r = (a.r || "").trim();
+  if (r === ""){ delete S.log[k]; return; }
+  const prev = S.log[k];
+  const d = new Date();
+  S.log[k] = {
+    lift:row.lift, week:row.week, day:row.day, order:row.order,
+    w:(a.w || "").trim(), r:r, p:row.reps, pct:row.pct, u:S.units,
+    date:(prev ? prev.date : (d.getMonth()+1) + "/" + d.getDate()),
+    cycle:S.cycle
+  };
+}
+
+/* ============================================================
+   PERSIST
+   ============================================================ */
+let saveTimer = null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const ok = await Store.set(JSON.stringify(S));
+    if (!ok) toast("Could not save");
+  }, 150);
+}
+async function load(){
+  const raw = await Store.get();
+  if (!raw) return;
+  try {
+    const d = JSON.parse(raw);
+    if (d && d.v === 1 && Array.isArray(d.program)){
+      S = d;
+      if (!S.max) S.max = {};
+      if (!S.actual) S.actual = {};
+      if (!S.log) S.log = {};
+      ensureValidWeekDay();
+    }
+  } catch(e){}
+}
+
+/* ============================================================
+   RENDER — header / nav
+   ============================================================ */
+function renderHeader(){
+  $("#progTitle").textContent = S.programName || "Program";
+  const wks = weeksInProgram();
+  let html = "";
+  if (wks.length){
+    html += '<div class="row-lbl"><span class="eyebrow">Week</span><div class="seg" id="weekSeg">'
+      + wks.map(function(w){ return '<button data-w="'+w+'">Wk '+w+'</button>'; }).join("")
+      + '</div></div>';
+    const dys = daysInWeek(S.week);
+    html += '<div class="row-lbl"><span class="eyebrow">Day</span><div class="seg" id="daySeg">'
+      + dys.map(function(d){ return '<button data-d="'+d+'">Day '+d+'</button>'; }).join("")
+      + '</div></div>';
+  }
+  $("#navRows").innerHTML = html;
+  pressed($("#weekSeg"), "w", S.week);
+  pressed($("#daySeg"), "d", S.day);
+}
+
+/* ============================================================
+   RENDER — set rows
+   ============================================================ */
+function setRow(row){
+  const u = S.units, ou = other(u);
+  const max = S.max[row.lift] || 0;
+  const isAmrap = /\+\s*$/.test(row.reps);
+  const k = setKey(row);
+  const a = S.actual[k] || {};
+  const logged = !!S.log[k];
+
+  let weightHTML;
+  if (row.pct !== null && max > 0){
+    const w = setWeight(max, row.pct);
+    weightHTML = '<span class="pct">'+fmt(row.pct)+'%</span> '
+      + '<span class="wt">'+fmt(w)+'<em>'+u+'</em></span>'
+      + '<span class="alt">'+fmt(conv(w,u))+' '+ou+'</span>';
+  } else if (row.pct !== null){
+    weightHTML = '<span class="tag warn">set 1RM in settings</span>';
+  } else {
+    weightHTML = '<span class="tag">bodyweight / accessory</span>';
+  }
+
+  return '<div class="setwrap'+(isAmrap?" amrap":"")+'">'
+    + '<div class="set">'
+    + '<div class="set-l"><div class="line1">'+weightHTML+'</div>'
+    +   '<div class="reps">&times; '+esc(row.reps)+'</div></div>'
+    + '<div class="set-inputs">'
+    +   '<div class="fl"><span class="eyebrow">Weight</span>'
+    +     '<input class="act" inputmode="decimal" data-lift="'+esc(row.lift)+'" data-k="'+k+'" data-f="w"'
+    +       ' value="'+(a.w!==undefined?esc(a.w):"")+'" placeholder="actual"></div>'
+    +   '<div class="fl"><span class="eyebrow">Reps</span>'
+    +     '<input class="act" inputmode="numeric" data-lift="'+esc(row.lift)+'" data-k="'+k+'" data-f="r"'
+    +       ' value="'+(a.r!==undefined?esc(a.r):"")+'" placeholder="'+esc(row.reps)+'"></div>'
+    + '</div></div>'
+    + '<div class="stat'+(logged?" saved":"")+'">'+(logged?"Logged":"—")+'</div>'
+    + '</div>';
+}
+
+/* ============================================================
+   RENDER — lift card
+   ============================================================ */
+function liftCard(group){
+  const lift = group.lift, max = S.max[lift] || 0;
+  const any1RM = group.rows.some(function(r){ return r.pct !== null; });
+  let html = '<section class="card"><div class="card-hd">'
+    + '<span class="lift-name">'+esc(lift)+'</span>';
+  if (any1RM){
+    html += '<span class="rm">1RM<br><b>'+(max?fmt(max):"—")+'</b> '+S.units+'</span>';
+  }
+  html += '</div>';
+  html += '<div class="acthd"><span class="eyebrow">Log actual — '+S.units+'</span></div>';
+  html += group.rows.map(setRow).join("");
+  return html + '</section>';
+}
+
+/* ============================================================
+   RENDER — main
+   ============================================================ */
+function render(){
+  renderHeader();
+  if (!S.program.length){
+    $("#main").innerHTML = '<div class="notice">'
+      + '<b>No program loaded</b>'
+      + '<p>Upload a CSV that lists your workout by week, day, lift, percent of 1RM and reps.</p>'
+      + '<div class="btnrow"><button class="btn wide" id="fUploadEmpty">Upload CSV</button></div>'
+      + '</div>';
+    return;
+  }
+  const rows = rowsFor(S.week, S.day);
+  if (!rows.length){
+    $("#main").innerHTML = '<div class="notice"><b>Nothing on this day</b>'
+      + '<p>No rows in the CSV match week '+S.week+', day '+S.day+'.</p></div>';
+    return;
+  }
+  const groups = groupByLift(rows);
+  $("#main").innerHTML = groups.map(liftCard).join("")
+    + '<p class="hint" style="text-align:center">Percentages off your 1RM &middot; '
+    + 'rounded to '+INC[S.units]+' '+S.units+' &middot; cycle '+S.cycle+'</p>';
+}
+
+/* ============================================================
+   DRAWERS
+   ============================================================ */
+function closeDrawer(){ $("#layer").innerHTML = ""; }
+function drawer(title, body){
+  $("#layer").innerHTML = '<div class="scrim" data-close="1"></div>'
+    + '<div class="drawer" role="dialog" aria-modal="true">'
+    + '<div class="drawer-hd"><h2>'+esc(title)+'</h2>'
+    + '<button class="icon-btn" data-close="1" aria-label="Close">&times;</button></div>'
+    + body + '</div>';
+}
+
+function settingsDrawer(){
+  const u = S.units, ou = other(u);
+  const lifts = liftsInProgram();
+  const maxRows = lifts.length ? lifts.map(function(l){
+    return '<div class="maxrow"><span class="nm">'+esc(l)+'</span>'
+      + '<input inputmode="decimal" data-max="'+esc(l)+'" value="'+(S.max[l]||"")+'" placeholder="&mdash;">'
+      + '<span class="cv" data-cv="'+esc(l)+'">'
+      + (S.max[l] ? fmt(conv(S.max[l],u))+" "+ou : "") + '</span></div>';
+  }).join("") : '<p class="hint">Load a CSV first to see lifts here.</p>';
+
+  drawer("Settings",
+      '<div class="field"><span class="eyebrow">Primary unit</span>'
+    + '<div class="seg" id="fUnits"><button data-u="lb">Pounds</button>'
+    + '<button data-u="kg">Kilos</button></div></div>'
+
+    + '<div class="field"><span class="eyebrow">One-rep maxes &mdash; '+u+'</span>'
+    + maxRows
+    + '<p class="hint">Only lifts with a percent column use this.</p></div>'
+
+    + '<div class="field"><span class="eyebrow">Workout program</span>'
+    + (S.programName ? '<p class="hint" style="margin:0 0 8px">Loaded: <b>'+esc(S.programName)
+        +'</b> &middot; '+S.program.length+' rows</p>' : '')
+    + '<label class="filepick">Choose CSV file<input type="file" accept=".csv,text/csv" id="fCsvFile" class="hide"></label>'
+    + '<textarea id="fCsvPaste" placeholder="...or paste CSV text here"></textarea>'
+    + '<div class="btnrow"><button class="btn" id="fCsvLoad">Load pasted CSV</button>'
+    + '<button class="btn ghost" id="fCsvSample">Download sample CSV</button></div>'
+    + '<p class="hint">Columns: week, day, lift, order, pct, reps. Order and pct are optional '
+    + '— leave pct blank for bodyweight or accessory work.</p></div>'
+
+    + '<div class="field"><span class="eyebrow">Cycle</span>'
+    + '<p class="hint" style="margin:0 0 8px">Currently on cycle <b>'+S.cycle+'</b>. '
+    + 'Starting a new cycle jumps back to week 1, day 1. Your history and maxes stay.</p>'
+    + '<div class="btnrow"><button class="btn ghost wide" id="fNewCycle">Start next cycle</button></div></div>'
+
+    + '<div class="field"><span class="eyebrow">Backup</span>'
+    + '<div class="btnrow"><button class="btn ghost" id="fExport">Export</button>'
+    + '<button class="btn ghost" id="fImport">Import</button></div>'
+    + '<p class="hint">Export saves your program, maxes and logged history as text.</p></div>'
+
+    + '<div class="field"><button class="btn ghost wide danger" id="fWipe">'
+    + 'Erase everything</button></div>');
+
+  pressed($("#fUnits"), "u", u);
+}
+
+function historyDrawer(){
+  const by = {};
+  Object.keys(S.log).map(function(k){ return S.log[k]; })
+    .sort(function(a,b){ return (b.cycle-a.cycle) || (b.week-a.week) || (b.day-a.day); })
+    .forEach(function(e){ (by[e.lift] = by[e.lift] || []).push(e); });
+  const lifts = Object.keys(by);
+  const groups = lifts.map(function(l){
+    return '<div class="hgroup"><h3>'+esc(l)+'</h3>'
+      + by[l].slice(0,25).map(function(e){
+          return '<div class="hrow">'
+            + '<span class="hd">c'+e.cycle+' w'+e.week+'d'+e.day+' &middot; '+esc(e.date)+'</span>'
+            + (e.w ? '<span class="hw">'+esc(e.w)+'</span><span>'+e.u+'</span>' : '')
+            + '<span class="hr">&times; '+esc(e.r)+'</span>'
+            + '<span class="hp">prescribed '+esc(e.p)+'</span></div>';
+        }).join("") + '</div>';
+  }).join("");
+  drawer("History", groups || '<div class="notice" style="margin:16px 0">'
+    + '<b>Nothing logged yet</b>Enter actual reps on a set to log it here.</div>');
+}
+
+function exportDrawer(){
+  drawer("Export backup",
+      '<p class="hint" style="margin:12px 0">Copy this and save it somewhere safe.</p>'
+    + '<textarea id="xText" readonly style="min-height:220px">'+esc(JSON.stringify(S))+'</textarea>'
+    + '<div class="btnrow"><button class="btn" id="xCopy">Copy</button></div>');
+}
+function importDrawer(){
+  drawer("Import backup",
+      '<p class="hint" style="margin:12px 0">Paste a backup below. This replaces everything in the app.</p>'
+    + '<textarea id="iText" placeholder="Paste backup text here"></textarea>'
+    + '<div class="btnrow"><button class="btn" id="iGo">Replace all data</button></div>');
+}
+
+/* ============================================================
+   CSV LOAD HANDLING
+   ============================================================ */
+function applyCSV(text, name){
+  const res = loadProgramCSV(text);
+  if (res.error){ toast(res.error); return; }
+  S.program = res.rows;
+  S.programName = name || "";
+  const wks = weeksInProgram();
+  S.week = wks.length ? wks[0] : 1;
+  const dys = wks.length ? daysInWeek(S.week) : [];
+  S.day = dys.length ? dys[0] : 1;
+  save(); closeDrawer(); render();
+  toast("Loaded " + res.rows.length + " rows"
+    + (res.skipped ? " (" + res.skipped + " skipped)" : ""));
+}
+function downloadSample(){
+  const blob = new Blob([SAMPLE_CSV], { type:"text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "sample-program.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
+
+/* ============================================================
+   EVENTS — clicks
+   ============================================================ */
+document.addEventListener("click", function(ev){
+  const t = ev.target.closest("button, [data-close]");
+  if (!t || t.disabled) return;
+
+  if (t.dataset.close){ closeDrawer(); return; }
+  if (t.dataset.w){ S.week = +t.dataset.w; S.day = daysInWeek(S.week)[0] || S.day; save(); render(); return; }
+  if (t.dataset.d){ S.day = +t.dataset.d; save(); render(); return; }
+
+  if (t.id === "btnSet"){ settingsDrawer(); return; }
+  if (t.id === "btnHist"){ historyDrawer(); return; }
+  if (t.id === "fUploadEmpty"){ settingsDrawer(); setTimeout(function(){ $("#fCsvFile").click(); }, 50); return; }
+
+  if (t.closest("#fUnits")){
+    const to = t.dataset.u;
+    if (to !== S.units){
+      liftsInProgram().forEach(function(l){
+        if (S.max[l]) S.max[l] = roundW(conv(S.max[l], S.units), to);
+      });
+      S.units = to; save(); render(); settingsDrawer();
+    }
+    return;
+  }
+  if (t.id === "fCsvSample"){ downloadSample(); return; }
+  if (t.id === "fCsvLoad"){
+    const txt = $("#fCsvPaste").value;
+    if (!txt.trim()){ toast("Paste some CSV text first"); return; }
+    applyCSV(txt, "pasted program");
+    return;
+  }
+  if (t.id === "fNewCycle"){
+    if (t.dataset.armed){
+      S.cycle++;
+      const wks = weeksInProgram();
+      S.week = wks.length ? wks[0] : 1;
+      S.day = daysInWeek(S.week)[0] || 1;
+      S.actual = {};
+      save(); render(); settingsDrawer(); toast("Cycle " + S.cycle);
+    } else {
+      t.dataset.armed = "1"; t.textContent = "Tap again to confirm";
+    }
+    return;
+  }
+  if (t.id === "fExport"){ exportDrawer(); return; }
+  if (t.id === "fImport"){ importDrawer(); return; }
+  if (t.id === "xCopy"){
+    const ta = $("#xText");
+    ta.select(); ta.setSelectionRange(0, 999999);
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(ta.value).then(
+        function(){ toast("Copied"); }, function(){ toast("Select and copy manually"); });
+    } else {
+      let ok = false; try { ok = document.execCommand("copy"); } catch(e){}
+      toast(ok ? "Copied" : "Select and copy manually");
+    }
+    return;
+  }
+  if (t.id === "iGo"){
+    try {
+      const d = JSON.parse($("#iText").value.trim());
+      if (!d || !Array.isArray(d.program)) throw new Error("shape");
+      S = d;
+      if (!S.max) S.max = {}; if (!S.actual) S.actual = {}; if (!S.log) S.log = {};
+      ensureValidWeekDay();
+      save(); closeDrawer(); render();
+      toast("Backup restored");
+    } catch(e){ toast("That is not a valid backup"); }
+    return;
+  }
+  if (t.id === "fWipe"){
+    if (t.dataset.armed){
+      S = fresh(); save(); closeDrawer(); render(); toast("Erased");
+    } else {
+      t.dataset.armed = "1"; t.textContent = "Tap again to erase";
+    }
+    return;
+  }
+});
+
+/* ============================================================
+   EVENTS — typing / file input
+   ============================================================ */
+document.addEventListener("input", function(ev){
+  const el = ev.target;
+
+  if (el.id === "fCsvFile" && el.files && el.files[0]){
+    const file = el.files[0];
+    const reader = new FileReader();
+    reader.onload = function(){ applyCSV(String(reader.result), file.name); };
+    reader.onerror = function(){ toast("Could not read that file"); };
+    reader.readAsText(file);
+    return;
+  }
+
+  if (el.dataset.k !== undefined && el.dataset.f !== undefined){
+    const k = el.dataset.k, f = el.dataset.f, v = el.value.trim();
+    if (!S.actual[k]) S.actual[k] = {};
+    if (v === "") delete S.actual[k][f]; else S.actual[k][f] = v;
+    if (!S.actual[k].w && !S.actual[k].r) delete S.actual[k];
+    el.classList.toggle("filled", v !== "");
+
+    const row = S.program.find(function(r){ return setKey(r) === k; });
+    if (row){
+      syncEntry(row);
+      const statEl = el.closest(".setwrap").querySelector(".stat");
+      const logged = !!S.log[k];
+      if (statEl){
+        statEl.textContent = logged ? "Logged" : "—";
+        statEl.className = "stat" + (logged ? " saved" : "");
+      }
+    }
+    save();
+    return;
+  }
+
+  if (el.dataset.max !== undefined){
+    const l = el.dataset.max;
+    S.max[l] = parseFloat(el.value) || 0;
+    const cv = $('[data-cv="'+CSS.escape(l)+'"]');
+    if (cv) cv.textContent = S.max[l] ? fmt(conv(S.max[l], S.units))+" "+other(S.units) : "";
+    save(); render();
+    return;
+  }
+});
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+(async function boot(){ await load(); render(); })();
+</script>
+</body>
+</html>
