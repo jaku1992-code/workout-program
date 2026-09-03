@@ -12,13 +12,15 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2316181c'/%3E%3Crect x='8' y='29' width='48' height='6' fill='%238b9099'/%3E%3Crect x='12' y='19' width='7' height='26' fill='%23c8443c'/%3E%3Crect x='45' y='19' width='7' height='26' fill='%23c8443c'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Bebas+Neue&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;600&family=Roboto+Slab:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --steel-900:#16181c; --steel-850:#1a1d22; --steel-800:#1e2127;
   --steel-750:#242830; --steel-700:#2e333d;
   --chalk:#e8e6e1; --zinc:#8b9099; --zinc-dim:#5f656e;
-  --iron:#c8443c; --brass:#c9a227; --moss:#4f8a5e;
+  --iron:#c8443c; --iron-rgb:200,68,60;
+  --brass:#c9a227; --brass-rgb:201,162,39;
+  --moss:#4f8a5e;
   --gauge:'Saira Condensed','Arial Narrow','Helvetica Neue',sans-serif;
   --body:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
@@ -69,7 +71,7 @@ button{cursor:pointer;border:0;background:none}
 
 /* banner */
 .banner{margin:0 0 4px;padding:10px 12px;border-radius:6px;
-  background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.4);
+  background:rgba(var(--brass-rgb),.12);border:1px solid rgba(var(--brass-rgb),.4);
   font-size:12px;color:var(--brass)}
 .banner b{display:block;font-family:var(--mono);font-size:10px;font-weight:600;
   letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px}
@@ -88,7 +90,7 @@ main{padding:var(--pad);display:flex;flex-direction:column;gap:14px}
 .tag{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.12em;
   text-transform:uppercase;padding:3px 6px;border-radius:3px;
   background:var(--steel-750);color:var(--zinc)}
-.tag.warn{background:rgba(201,162,39,.16);color:var(--brass)}
+.tag.warn{background:rgba(var(--brass-rgb),.16);color:var(--brass)}
 
 /* set rows */
 .acthd{display:flex;justify-content:flex-end;padding:9px 14px 2px}
@@ -162,6 +164,18 @@ input.act.filled{border-color:var(--brass)}
 .maxrow input:focus{outline:2px solid var(--iron);outline-offset:-1px}
 .maxrow .cv{flex:0 0 66px;text-align:right;font-family:var(--mono);
   font-size:11px;color:var(--zinc-dim)}
+input[type="color"]{-webkit-appearance:none;appearance:none;width:52px;height:40px;
+  padding:2px;background:var(--steel-800);border:1px solid var(--steel-700);
+  border-radius:6px;cursor:pointer}
+input[type="color"]::-webkit-color-swatch-wrapper{padding:0}
+input[type="color"]::-webkit-color-swatch{border:0;border-radius:4px}
+
+/* video */
+.video-toggle{margin:10px 14px 0;display:inline-flex;align-items:center;gap:6px}
+.video-wrap{position:relative;width:100%;padding-top:56.25%;height:0;margin:10px 14px 0;
+  border-radius:6px;overflow:hidden;background:var(--steel-900)}
+.video-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.card > .video-toggle:last-child,.card > .video-wrap:last-child{margin-bottom:12px}
 
 .hgroup{padding:12px 0;border-bottom:1px solid var(--steel-750)}
 .hgroup h3{margin:0 0 8px;font-family:var(--gauge);font-weight:700;font-size:18px;
@@ -240,12 +254,24 @@ const Store = {
 const INC = { lb:5, kg:2.5 };
 const LB_PER_KG = 2.20462;
 
+const FONT_PRESETS = {
+  classic:{ label:"Classic", gauge:"'Saira Condensed','Arial Narrow',sans-serif",
+    body:"'IBM Plex Sans',-apple-system,sans-serif", mono:"'IBM Plex Mono',monospace" },
+  modern:{ label:"Modern", gauge:"'Oswald','Arial Narrow',sans-serif",
+    body:"'Inter',-apple-system,sans-serif", mono:"'JetBrains Mono',monospace" },
+  bold:{ label:"Bold", gauge:"'Bebas Neue','Arial Narrow',sans-serif",
+    body:"'Roboto',sans-serif", mono:"'Roboto Mono',monospace" },
+  slab:{ label:"Slab", gauge:"'Bebas Neue','Arial Narrow',sans-serif",
+    body:"'Roboto Slab',serif", mono:"'IBM Plex Mono',monospace" }
+};
+const DEFAULT_THEME = { accent:"#c8443c", highlight:"#c9a227", font:"classic" };
+
 const SAMPLE_CSV =
-"week,day,lift,order,pct,reps\n" +
-"1,1,Squat,1,65,5\n" +
-"1,1,Squat,2,75,5\n" +
-"1,1,Squat,3,85,5+\n" +
-"1,1,Bench Press,1,65,5\n" +
+"week,day,lift,order,pct,reps,video\n" +
+"1,1,Squat,1,65,5,\n" +
+"1,1,Squat,2,75,5,\n" +
+"1,1,Squat,3,85,5+,https://www.youtube.com/watch?v=nADbFEZUYfE\n" +
+"1,1,Bench Press,1,65,5,\n" +
 "1,1,Bench Press,2,75,5\n" +
 "1,1,Bench Press,3,85,5+\n" +
 "1,1,Ab Wheel,1,,10-15\n" +
@@ -280,7 +306,8 @@ const fresh = () => ({
   max:{},                           /* lift name -> number */
   actual:{},                        /* setKey -> {w,r} typed values */
   log:{},                           /* setKey -> {lift,week,day,order,w,r,p,u,date,cycle} */
-  lastBackup:null                   /* ms timestamp of last export/download, or null */
+  lastBackup:null,                  /* ms timestamp of last export/download, or null */
+  theme:Object.assign({}, DEFAULT_THEME)
 });
 let S = fresh();
 
@@ -301,6 +328,43 @@ function conv(w, from){
 function setWeight(max, pct){ return roundW(max * pct / 100, S.units); }
 function num(v){ const n = parseFloat(v); return isNaN(n) ? null : n; }
 function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,"_"); }
+
+/* ============================================================
+   THEME
+   ============================================================ */
+function hexToRgb(hex){
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
+  return m ? (parseInt(m[1],16)+","+parseInt(m[2],16)+","+parseInt(m[3],16)) : "200,68,60";
+}
+function applyTheme(){
+  const t = Object.assign({}, DEFAULT_THEME, S.theme);
+  const r = document.documentElement.style;
+  r.setProperty("--iron", t.accent);
+  r.setProperty("--iron-rgb", hexToRgb(t.accent));
+  r.setProperty("--brass", t.highlight);
+  r.setProperty("--brass-rgb", hexToRgb(t.highlight));
+  const f = FONT_PRESETS[t.font] || FONT_PRESETS.classic;
+  r.setProperty("--gauge", f.gauge);
+  r.setProperty("--body", f.body);
+  r.setProperty("--mono", f.mono);
+}
+
+/* ============================================================
+   VIDEO EMBED
+   ============================================================ */
+function embedURL(url){
+  url = (url || "").trim();
+  if (!url) return null;
+  let m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([\w-]{6,})/);
+  if (m) return "https://www.youtube.com/embed/" + m[1];
+  m = url.match(/vimeo\.com\/(\d+)/);
+  if (m) return "https://player.vimeo.com/video/" + m[1];
+  return url;
+}
+function firstVideo(rows){
+  const r = rows.find(function(r){ return r.video; });
+  return r ? r.video : null;
+}
 
 function toast(m){
   const o = $(".toast"); if (o) o.remove();
@@ -368,7 +432,8 @@ const COL_ALIASES = {
   lift:["lift","exercise","movement","name"],
   order:["order","set","setnumber","seq","sequence"],
   pct:["pct","percent","percentage","%"],
-  reps:["reps","rep","target"]
+  reps:["reps","rep","target"],
+  video:["video","videourl","video_url","link","url"]
 };
 
 function loadProgramCSV(text){
@@ -400,7 +465,8 @@ function loadProgramCSV(text){
     const orderRaw = idx.order !== undefined ? (row[idx.order] || "").trim() : "";
     let order = orderRaw === "" ? null : parseFloat(orderRaw);
     if (order === null || isNaN(order)) order = out.length;
-    out.push({ week:week, day:day, lift:lift, order:order, pct:pct, reps:reps });
+    const video = idx.video !== undefined ? (row[idx.video] || "").trim() : "";
+    out.push({ week:week, day:day, lift:lift, order:order, pct:pct, reps:reps, video:video||null });
   }
   if (!out.length) return { error:"No usable rows found. Every row needs week, day, lift and reps filled in." };
   return { rows:out, skipped:skipped };
@@ -486,6 +552,7 @@ async function load(){
       if (!S.actual) S.actual = {};
       if (!S.log) S.log = {};
       if (S.lastBackup === undefined) S.lastBackup = null;
+      if (!S.theme) S.theme = Object.assign({}, DEFAULT_THEME);
       ensureValidWeekDay();
     }
   } catch(e){}
@@ -557,12 +624,16 @@ function setRow(row){
 function liftCard(group){
   const lift = group.lift, max = S.max[lift] || 0;
   const any1RM = group.rows.some(function(r){ return r.pct !== null; });
+  const video = firstVideo(group.rows);
   let html = '<section class="card"><div class="card-hd">'
     + '<span class="lift-name">'+esc(lift)+'</span>';
   if (any1RM){
     html += '<span class="rm">1RM<br><b>'+(max?fmt(max):"—")+'</b> '+S.units+'</span>';
   }
   html += '</div>';
+  if (video){
+    html += '<button class="btn ghost video-toggle" data-video="'+esc(video)+'">&#9654; Watch demo</button>';
+  }
   html += '<div class="acthd"><span class="eyebrow">Log actual — '+S.units+'</span></div>';
   html += group.rows.map(setRow).join("");
   return html + '</section>';
@@ -629,8 +700,22 @@ function settingsDrawer(){
       + (S.max[l] ? fmt(conv(S.max[l],u))+" "+ou : "") + '</span></div>';
   }).join("") : '<p class="hint">Load a CSV first to see lifts here.</p>';
 
+  const theme = Object.assign({}, DEFAULT_THEME, S.theme);
+  const fontRow = Object.keys(FONT_PRESETS).map(function(k){
+    return '<button data-font="'+k+'">'+FONT_PRESETS[k].label+'</button>';
+  }).join("");
+
   drawer("Settings",
-      '<div class="field"><span class="eyebrow">Primary unit</span>'
+      '<div class="field"><span class="eyebrow">Appearance</span>'
+    + '<div class="maxrow"><span class="nm">Accent color</span>'
+    +   '<input type="color" data-theme="accent" value="'+esc(theme.accent)+'"></div>'
+    + '<div class="maxrow"><span class="nm">Highlight color</span>'
+    +   '<input type="color" data-theme="highlight" value="'+esc(theme.highlight)+'"></div>'
+    + '<span class="eyebrow" style="display:block;margin:10px 0 7px">Font pairing</span>'
+    + '<div class="seg" id="fFont">'+fontRow+'</div>'
+    + '<div class="btnrow"><button class="btn ghost wide" id="fThemeReset">Reset appearance</button></div></div>'
+
+    + '<div class="field"><span class="eyebrow">Primary unit</span>'
     + '<div class="seg" id="fUnits"><button data-u="lb">Pounds</button>'
     + '<button data-u="kg">Kilos</button></div></div>'
 
@@ -667,6 +752,7 @@ function settingsDrawer(){
     + 'Erase everything</button></div>');
 
   pressed($("#fUnits"), "u", u);
+  pressed($("#fFont"), "font", theme.font);
 }
 
 function historyDrawer(){
@@ -745,7 +831,9 @@ function restoreFromData(d){
   S = d;
   if (!S.max) S.max = {}; if (!S.actual) S.actual = {}; if (!S.log) S.log = {};
   if (S.lastBackup === undefined) S.lastBackup = null;
+  if (!S.theme) S.theme = Object.assign({}, DEFAULT_THEME);
   ensureValidWeekDay();
+  applyTheme();
   save(); closeDrawer(); render();
   toast("Backup restored");
 }
@@ -761,10 +849,30 @@ document.addEventListener("click", function(ev){
   if (t.dataset.w){ S.week = +t.dataset.w; S.day = daysInWeek(S.week)[0] || S.day; save(); render(); return; }
   if (t.dataset.d){ S.day = +t.dataset.d; save(); render(); return; }
 
+  if (t.dataset.video !== undefined){
+    const src = embedURL(t.dataset.video);
+    const wrap = document.createElement("div");
+    wrap.className = "video-wrap";
+    wrap.innerHTML = '<iframe src="'+esc(src)+'" allow="accelerometer; autoplay; clipboard-write; '
+      + 'encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>';
+    t.replaceWith(wrap);
+    return;
+  }
+
   if (t.id === "btnSet"){ settingsDrawer(); return; }
   if (t.id === "btnHist"){ historyDrawer(); return; }
   if (t.id === "fUploadEmpty"){ settingsDrawer(); setTimeout(function(){ $("#fCsvFile").click(); }, 50); return; }
 
+  if (t.dataset.font){
+    S.theme = Object.assign({}, DEFAULT_THEME, S.theme, { font:t.dataset.font });
+    applyTheme(); save(); settingsDrawer();
+    return;
+  }
+  if (t.id === "fThemeReset"){
+    S.theme = Object.assign({}, DEFAULT_THEME);
+    applyTheme(); save(); settingsDrawer(); toast("Appearance reset");
+    return;
+  }
   if (t.closest("#fUnits")){
     const to = t.dataset.u;
     if (to !== S.units){
@@ -824,7 +932,7 @@ document.addEventListener("click", function(ev){
   }
   if (t.id === "fWipe"){
     if (t.dataset.armed){
-      S = fresh(); save(); closeDrawer(); render(); toast("Erased");
+      S = fresh(); applyTheme(); save(); closeDrawer(); render(); toast("Erased");
     } else {
       t.dataset.armed = "1"; t.textContent = "Tap again to erase";
     }
@@ -880,6 +988,13 @@ document.addEventListener("input", function(ev){
     return;
   }
 
+  if (el.dataset.theme !== undefined){
+    S.theme = Object.assign({}, DEFAULT_THEME, S.theme);
+    S.theme[el.dataset.theme] = el.value;
+    applyTheme(); save();
+    return;
+  }
+
   if (el.dataset.max !== undefined){
     const l = el.dataset.max;
     S.max[l] = parseFloat(el.value) || 0;
@@ -893,7 +1008,7 @@ document.addEventListener("input", function(ev){
 /* ============================================================
    BOOT
    ============================================================ */
-(async function boot(){ await load(); render(); })();
+(async function boot(){ await load(); applyTheme(); render(); })();
 </script>
 </body>
 </html>

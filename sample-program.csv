@@ -1,26 +1,26 @@
-week,day,lift,order,pct,reps
-1,1,Squat,1,65,5
-1,1,Squat,2,75,5
-1,1,Squat,3,85,5+
-1,1,Bench Press,1,65,5
-1,1,Bench Press,2,75,5
-1,1,Bench Press,3,85,5+
-1,1,Ab Wheel,1,,10-15
-1,2,Deadlift,1,65,5
-1,2,Deadlift,2,75,5
-1,2,Deadlift,3,85,5+
-1,2,Overhead Press,1,65,5
-1,2,Overhead Press,2,75,5
-1,2,Overhead Press,3,85,5+
-2,1,Squat,1,70,3
-2,1,Squat,2,80,3
-2,1,Squat,3,90,3+
-2,1,Bench Press,1,70,3
-2,1,Bench Press,2,80,3
-2,1,Bench Press,3,90,3+
-2,2,Deadlift,1,70,3
-2,2,Deadlift,2,80,3
-2,2,Deadlift,3,90,3+
-2,2,Overhead Press,1,70,3
-2,2,Overhead Press,2,80,3
-2,2,Overhead Press,3,90,3+
+week,day,lift,order,pct,reps,video
+1,1,Squat,1,65,5,
+1,1,Squat,2,75,5,
+1,1,Squat,3,85,5+,https://www.youtube.com/watch?v=nADbFEZUYfE
+1,1,Bench Press,1,65,5,
+1,1,Bench Press,2,75,5,
+1,1,Bench Press,3,85,5+,
+1,1,Ab Wheel,1,,10-15,
+1,2,Deadlift,1,65,5,
+1,2,Deadlift,2,75,5,
+1,2,Deadlift,3,85,5+,
+1,2,Overhead Press,1,65,5,
+1,2,Overhead Press,2,75,5,
+1,2,Overhead Press,3,85,5+,
+2,1,Squat,1,70,3,
+2,1,Squat,2,80,3,
+2,1,Squat,3,90,3+,
+2,1,Bench Press,1,70,3,
+2,1,Bench Press,2,80,3,
+2,1,Bench Press,3,90,3+,
+2,2,Deadlift,1,70,3,
+2,2,Deadlift,2,80,3,
+2,2,Deadlift,3,90,3+,
+2,2,Overhead Press,1,70,3,
+2,2,Overhead Press,2,80,3,
+2,2,Overhead Press,3,90,3+,

@@ -22,6 +22,7 @@ One row per set. Header row required, columns in any order:
 | `order` | no  | set order within that lift/day (defaults to file order) |
 | `pct`   | no  | percent of 1RM for that set. Leave blank for bodyweight/accessory work |
 | `reps`  | yes | reps prescribed, e.g. `5`. End with `+` (e.g. `5+`) to mark a max-rep/AMRAP set |
+| `video` | no  | a YouTube (or Vimeo) link for that lift. Shows a "Watch demo" button on the card |
 
 A starter file is included: `sample-program.csv`. Open it in Excel, edit it
 to match your own program, save as CSV, and upload it in Settings.
@@ -40,3 +41,8 @@ its browser data, that's gone unless you've backed up.
   last backup.
 - To restore on a new phone or after wiping data: gear icon → Backup →
   **Restore from file**, and pick the backup file you saved.
+
+## Personalizing the look
+
+Gear icon → Appearance: pick an accent color, a highlight color, and a font
+pairing. Changes apply immediately and are saved with your data.
