@@ -42,6 +42,23 @@ its browser data, that's gone unless you've backed up.
 - To restore on a new phone or after wiping data: gear icon → Backup →
   **Restore from file**, and pick the backup file you saved.
 
+## Building a program in the app
+
+No spreadsheet needed — tap the pencil icon (top right) to open the builder:
+
+- **+ Add set** — copies your last row and bumps the set number. Use this
+  for back-to-back top sets of the same lift.
+- **+ New lift, same day** — starts a fresh lift on the same week/day.
+- **+ New day, same week** / **+ New week** — jump ahead when you're done
+  with the current day or week.
+- Each row: week, day, set number, lift name, percent of 1RM (leave blank
+  for bodyweight), reps, and an optional video link.
+- **Load into tracker** — puts the program to use right away.
+- **Download as CSV** — saves it as a file if you want a copy or want to
+  upload it later.
+- **Start from sample** — fills the builder with the sample program so you
+  can see the shape and edit from there.
+
 ## Personalizing the look
 
 Gear icon → Appearance: pick an accent color, a highlight color, and a font

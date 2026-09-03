@@ -177,6 +177,23 @@ input[type="color"]::-webkit-color-swatch{border:0;border-radius:4px}
 .video-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .card > .video-toggle:last-child,.card > .video-wrap:last-child{margin-bottom:12px}
 
+.brow{border:1px solid var(--steel-700);border-radius:8px;padding:10px;margin:0 0 10px;
+  background:var(--steel-850)}
+.brow-hd{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.brow-hd .eyebrow{flex:1 1 auto}
+.brow-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.brow-grid.two{grid-template-columns:1fr 1fr}
+.bfield{display:flex;flex-direction:column;gap:3px}
+.bfield input{min-height:40px;padding:0 8px;background:var(--steel-800);
+  border:1px solid var(--steel-700);border-radius:6px;font-family:var(--gauge);
+  font-weight:700;font-size:16px;width:100%}
+.bfield input:focus{outline:2px solid var(--iron);outline-offset:-1px}
+.bfield.wide{grid-column:1 / -1}
+.builder-summary{font-size:12px;color:var(--zinc);margin:0 0 10px}
+.icon-mini{width:30px;height:30px;flex:0 0 auto;border-radius:5px;background:var(--steel-750);
+  border:1px solid var(--steel-700);color:var(--zinc);font-size:13px}
+.icon-mini.danger{color:var(--iron)}
+
 .hgroup{padding:12px 0;border-bottom:1px solid var(--steel-750)}
 .hgroup h3{margin:0 0 8px;font-family:var(--gauge);font-weight:700;font-size:18px;
   letter-spacing:.05em;text-transform:uppercase}
@@ -215,6 +232,7 @@ textarea{width:100%;min-height:110px;padding:10px;background:var(--steel-800);
   <div class="hdr-top">
     <div class="mark" id="progTitle">Program</div>
     <div class="hdr-spacer"></div>
+    <button class="icon-btn" id="btnBuild" aria-label="Program builder">&#9998;</button>
     <button class="icon-btn" id="btnHist" aria-label="History">&#9711;</button>
     <button class="icon-btn" id="btnSet" aria-label="Settings">&#9881;</button>
   </div>
@@ -307,7 +325,8 @@ const fresh = () => ({
   actual:{},                        /* setKey -> {w,r} typed values */
   log:{},                           /* setKey -> {lift,week,day,order,w,r,p,u,date,cycle} */
   lastBackup:null,                  /* ms timestamp of last export/download, or null */
-  theme:Object.assign({}, DEFAULT_THEME)
+  theme:Object.assign({}, DEFAULT_THEME),
+  builderName:"", builder:[]         /* draft rows: {week,day,lift,order,pct,reps,video} */
 });
 let S = fresh();
 
@@ -473,6 +492,76 @@ function loadProgramCSV(text){
 }
 
 /* ============================================================
+   PROGRAM BUILDER
+   ============================================================ */
+function blankBuilderRow(over){
+  return Object.assign({ week:1, day:1, lift:"", order:1, pct:"", reps:"", video:"" }, over || {});
+}
+function sortedBuilderRows(){
+  return S.builder.map(function(r,i){ return { r:r, i:i }; })
+    .sort(function(a,b){
+      return (num(a.r.week)-num(b.r.week)) || (num(a.r.day)-num(b.r.day))
+        || ((num(a.r.order) || 0) - (num(b.r.order) || 0));
+    });
+}
+function builderLiftNames(){
+  const seen = {}, out = [];
+  S.builder.concat(S.program).forEach(function(r){
+    const l = (r.lift || "").trim();
+    if (l && !seen[l]){ seen[l] = 1; out.push(l); }
+  });
+  return out;
+}
+function validBuilderRows(){
+  const out = [];
+  S.builder.forEach(function(r){
+    const week = parseInt(r.week,10), day = parseInt(r.day,10);
+    const lift = (r.lift || "").trim(), reps = (r.reps || "").trim();
+    if (!week || !day || !lift || !reps) return;
+    let pct = r.pct === "" || r.pct === undefined || r.pct === null ? null : parseFloat(r.pct);
+    if (pct !== null && isNaN(pct)) pct = null;
+    let order = num(r.order); if (order === null) order = out.length;
+    const video = (r.video || "").trim();
+    out.push({ week:week, day:day, lift:lift, order:order, pct:pct, reps:reps, video:video||null });
+  });
+  return out;
+}
+function csvEscape(v){
+  v = v === null || v === undefined ? "" : String(v);
+  return /[",\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v;
+}
+function builderToCSV(){
+  const header = "week,day,lift,order,pct,reps,video\n";
+  const rows = validBuilderRows().map(function(r){
+    return [r.week, r.day, csvEscape(r.lift), r.order, r.pct===null?"":r.pct,
+      csvEscape(r.reps), csvEscape(r.video||"")].join(",");
+  });
+  return header + rows.join("\n") + (rows.length ? "\n" : "");
+}
+function downloadBuilderCSV(){
+  const rows = validBuilderRows();
+  if (!rows.length){ toast("No complete rows yet — need week, day, lift and reps"); return; }
+  const blob = new Blob([builderToCSV()], { type:"text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = (S.builderName ? slug(S.builderName) : "my-program") + ".csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  toast("Downloaded " + rows.length + " rows");
+}
+function loadBuilderIntoProgram(){
+  const rows = validBuilderRows();
+  if (!rows.length){ toast("No complete rows yet — need week, day, lift and reps"); return; }
+  S.program = rows;
+  S.programName = S.builderName || "Custom program";
+  const wks = weeksInProgram();
+  S.week = wks.length ? wks[0] : 1;
+  S.day = wks.length ? (daysInWeek(S.week)[0] || 1) : 1;
+  save(); closeDrawer(); render();
+  toast("Loaded " + rows.length + " rows into the tracker");
+}
+
+/* ============================================================
    PROGRAM QUERIES
    ============================================================ */
 function weeksInProgram(){
@@ -553,6 +642,8 @@ async function load(){
       if (!S.log) S.log = {};
       if (S.lastBackup === undefined) S.lastBackup = null;
       if (!S.theme) S.theme = Object.assign({}, DEFAULT_THEME);
+      if (!Array.isArray(S.builder)) S.builder = [];
+      if (S.builderName === undefined) S.builderName = "";
       ensureValidWeekDay();
     }
   } catch(e){}
@@ -662,7 +753,8 @@ function render(){
     $("#main").innerHTML = banner + '<div class="notice">'
       + '<b>No program loaded</b>'
       + '<p>Upload a CSV that lists your workout by week, day, lift, percent of 1RM and reps.</p>'
-      + '<div class="btnrow"><button class="btn wide" id="fUploadEmpty">Upload CSV</button></div>'
+      + '<div class="btnrow"><button class="btn wide" id="fUploadEmpty">Upload CSV</button>'
+      + '<button class="btn ghost wide" id="fBuildEmpty">Build one instead</button></div>'
       + '</div>';
     return;
   }
@@ -775,6 +867,77 @@ function historyDrawer(){
     + '<b>Nothing logged yet</b>Enter actual reps on a set to log it here.</div>');
 }
 
+function builderDrawer(){
+  const rows = sortedBuilderRows();
+  const validCount = validBuilderRows().length;
+  const names = builderLiftNames();
+  const datalist = '<datalist id="liftNames">'
+    + names.map(function(n){ return '<option value="'+esc(n)+'">'; }).join("") + '</datalist>';
+
+  const rowsHTML = rows.map(function(item){
+    const r = item.r, i = item.i;
+    return '<div class="brow">'
+      + '<div class="brow-hd"><span class="eyebrow">Week '+esc(r.week||"?")+' &middot; Day '
+      +   esc(r.day||"?")+' &middot; set '+esc(r.order||"?")+'</span>'
+      + '<button class="icon-mini" data-bdup="'+i+'" title="Duplicate">&#10697;</button>'
+      + '<button class="icon-mini danger" data-bdel="'+i+'" title="Delete">&times;</button></div>'
+      + '<div class="brow-grid">'
+      +   '<div class="bfield"><span class="eyebrow">Week</span>'
+      +     '<input inputmode="numeric" data-brow="'+i+'" data-bf="week" value="'+esc(r.week)+'"></div>'
+      +   '<div class="bfield"><span class="eyebrow">Day</span>'
+      +     '<input inputmode="numeric" data-brow="'+i+'" data-bf="day" value="'+esc(r.day)+'"></div>'
+      +   '<div class="bfield"><span class="eyebrow">Set #</span>'
+      +     '<input inputmode="numeric" data-brow="'+i+'" data-bf="order" value="'+esc(r.order)+'"></div>'
+      + '</div>'
+      + '<div class="bfield wide" style="margin-bottom:8px"><span class="eyebrow">Lift</span>'
+      +   '<input data-brow="'+i+'" data-bf="lift" list="liftNames" value="'+esc(r.lift)
+      +     '" placeholder="e.g. Squat"></div>'
+      + '<div class="brow-grid two">'
+      +   '<div class="bfield"><span class="eyebrow">% of 1RM (blank = bodyweight)</span>'
+      +     '<input inputmode="decimal" data-brow="'+i+'" data-bf="pct" value="'+esc(r.pct)+'" placeholder="—"></div>'
+      +   '<div class="bfield"><span class="eyebrow">Reps ("5", "5+", "10-12")</span>'
+      +     '<input data-brow="'+i+'" data-bf="reps" value="'+esc(r.reps)+'" placeholder="5"></div>'
+      + '</div>'
+      + '<div class="bfield wide"><span class="eyebrow">Video link (optional)</span>'
+      +   '<input data-brow="'+i+'" data-bf="video" value="'+esc(r.video)+'" placeholder="https://youtube.com/..."></div>'
+      + '</div>';
+  }).join("");
+
+  drawer("Program builder",
+      '<div class="field"><span class="eyebrow">Program name</span>'
+    + '<input id="fBuildName" style="width:100%;min-height:44px;padding:0 10px;margin-top:6px;'
+    +   'background:var(--steel-800);border:1px solid var(--steel-700);border-radius:6px;'
+    +   'font-family:var(--gauge);font-weight:700;font-size:18px" value="'+esc(S.builderName)
+    +   '" placeholder="My program"></div>'
+
+    + '<div class="field">'
+    + '<p class="builder-summary">'+S.builder.length+' row'+(S.builder.length===1?"":"s")
+    +   ', '+validCount+' complete (need week, day, lift and reps).</p>'
+    + '<div class="btnrow">'
+    +   '<button class="btn" id="fBuildAdd">+ Add set</button>'
+    +   '<button class="btn ghost" id="fBuildNewLift">+ New lift, same day</button>'
+    + '</div>'
+    + '<div class="btnrow">'
+    +   '<button class="btn ghost" id="fBuildNewDay">+ New day, same week</button>'
+    +   '<button class="btn ghost" id="fBuildNewWeek">+ New week</button>'
+    + '</div>'
+    + '<p class="hint">"Add set" copies your last row and bumps the set number — handy for '
+    + 'three top sets in a row. Use the other buttons when you move to a new lift, day or week.</p>'
+    + '</div>'
+
+    + '<div class="field">' + datalist + (rowsHTML || '<p class="hint">No rows yet. Tap '
+    + '"Add set" to start, or load the sample to see the shape.</p>') + '</div>'
+
+    + '<div class="field"><div class="btnrow">'
+    +   '<button class="btn wide" id="fBuildLoad">Load into tracker</button>'
+    + '</div><div class="btnrow">'
+    +   '<button class="btn ghost" id="fBuildDownload">Download as CSV</button>'
+    +   '<button class="btn ghost" id="fBuildSample">Start from sample</button>'
+    + '</div><div class="btnrow">'
+    +   '<button class="btn ghost danger" id="fBuildClear">Clear builder</button>'
+    + '</div></div>');
+}
+
 function exportDrawer(){
   drawer("Export backup",
       '<p class="hint" style="margin:12px 0">Copy this and save it somewhere safe.</p>'
@@ -832,6 +995,8 @@ function restoreFromData(d){
   if (!S.max) S.max = {}; if (!S.actual) S.actual = {}; if (!S.log) S.log = {};
   if (S.lastBackup === undefined) S.lastBackup = null;
   if (!S.theme) S.theme = Object.assign({}, DEFAULT_THEME);
+  if (!Array.isArray(S.builder)) S.builder = [];
+  if (S.builderName === undefined) S.builderName = "";
   ensureValidWeekDay();
   applyTheme();
   save(); closeDrawer(); render();
@@ -861,7 +1026,69 @@ document.addEventListener("click", function(ev){
 
   if (t.id === "btnSet"){ settingsDrawer(); return; }
   if (t.id === "btnHist"){ historyDrawer(); return; }
+  if (t.id === "btnBuild" || t.id === "fBuildEmpty"){ builderDrawer(); return; }
   if (t.id === "fUploadEmpty"){ settingsDrawer(); setTimeout(function(){ $("#fCsvFile").click(); }, 50); return; }
+
+  /* program builder */
+  if (t.id === "fBuildAdd"){
+    const last = S.builder.length ? S.builder[S.builder.length-1] : null;
+    S.builder.push(last
+      ? Object.assign({}, last, { order:(num(last.order)||0)+1 })
+      : blankBuilderRow());
+    save(); builderDrawer();
+    return;
+  }
+  if (t.id === "fBuildNewLift"){
+    const last = S.builder.length ? S.builder[S.builder.length-1] : null;
+    S.builder.push(blankBuilderRow(last ? { week:last.week, day:last.day } : {}));
+    save(); builderDrawer();
+    return;
+  }
+  if (t.id === "fBuildNewDay"){
+    const last = S.builder.length ? S.builder[S.builder.length-1] : null;
+    S.builder.push(blankBuilderRow(last ? { week:last.week, day:(num(last.day)||0)+1 } : {}));
+    save(); builderDrawer();
+    return;
+  }
+  if (t.id === "fBuildNewWeek"){
+    const last = S.builder.length ? S.builder[S.builder.length-1] : null;
+    S.builder.push(blankBuilderRow(last ? { week:(num(last.week)||0)+1, day:1 } : {}));
+    save(); builderDrawer();
+    return;
+  }
+  if (t.dataset.bdup !== undefined){
+    const src = S.builder[+t.dataset.bdup];
+    if (src) S.builder.push(Object.assign({}, src, { order:(num(src.order)||0)+1 }));
+    save(); builderDrawer();
+    return;
+  }
+  if (t.dataset.bdel !== undefined){
+    S.builder.splice(+t.dataset.bdel, 1);
+    save(); builderDrawer();
+    return;
+  }
+  if (t.id === "fBuildLoad"){ loadBuilderIntoProgram(); return; }
+  if (t.id === "fBuildDownload"){ downloadBuilderCSV(); return; }
+  if (t.id === "fBuildSample"){
+    const res = loadProgramCSV(SAMPLE_CSV);
+    if (!res.error){
+      S.builder = res.rows.map(function(r){
+        return { week:r.week, day:r.day, lift:r.lift, order:r.order,
+          pct:r.pct===null?"":r.pct, reps:r.reps, video:r.video||"" };
+      });
+      if (!S.builderName) S.builderName = "My program";
+      save(); builderDrawer();
+    }
+    return;
+  }
+  if (t.id === "fBuildClear"){
+    if (t.dataset.armed){
+      S.builder = []; save(); builderDrawer(); toast("Builder cleared");
+    } else {
+      t.dataset.armed = "1"; t.textContent = "Tap again to clear";
+    }
+    return;
+  }
 
   if (t.dataset.font){
     S.theme = Object.assign({}, DEFAULT_THEME, S.theme, { font:t.dataset.font });
@@ -984,6 +1211,17 @@ document.addEventListener("input", function(ev){
         statEl.className = "stat" + (logged ? " saved" : "");
       }
     }
+    save();
+    return;
+  }
+
+  if (el.id === "fBuildName"){
+    S.builderName = el.value; save();
+    return;
+  }
+  if (el.dataset.brow !== undefined && el.dataset.bf !== undefined){
+    const row = S.builder[+el.dataset.brow];
+    if (row) row[el.dataset.bf] = el.value;
     save();
     return;
   }
