@@ -27,6 +27,11 @@ One row per set. Header row required, columns in any order:
 A starter file is included: `sample-program.csv`. Open it in Excel, edit it
 to match your own program, save as CSV, and upload it in Settings.
 
+Also included: `benchamin-franklin-ii.csv` — a full 8-week, 3-day/week
+bench-focused program ("BENCHamin Franklin II"), transcribed from a
+handwritten template with deadlift moved from day 1 to day 2 every week. A
+larger, real-world example of what a filled-out program looks like.
+
 Settings also has a "Download sample CSV" button if you want a fresh copy.
 
 ## Backing up your progress
